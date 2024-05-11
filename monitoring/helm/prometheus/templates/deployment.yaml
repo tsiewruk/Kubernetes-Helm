@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.prometheus.name }}-deployment
+  namespace: {{ .Values.prometheus.namespace }}
+spec:
+  replicas: {{ .Values.prometheus.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.prometheus.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.prometheus.name }}
+    spec:
+      {{- if .Values.prometheus.SecurityContext.enabled }}
+      securityContext:
+        {{- toYaml .Values.prometheus.SecurityContext | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: {{ .Values.prometheus.name }}
+        image: {{ .Values.prometheus.containers.image }}
+        imagePullPolicy: {{ .Values.prometheus.containers.pullPolicy }}
+        {{- if .Values.prometheus.environment.enabled }}
+        env:
+          {{- range .Values.prometheus.environment.variables }}
+          - name: {{ .name | quote }}
+            value: {{ .value | quote }}
+          {{- end }}
+        {{- end }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.prometheus.ports.containerPort }}
+          protocol: {{ .Values.prometheus.ports.protocol | default "TCP" }}
+        resources:
+          {{- toYaml .Values.prometheus.resources | nindent 12 }}
+        {{- if .Values.prometheus.livenessProbe.enabled }}
+        livenessProbe:
+          httpGet:
+            {{- with .Values.prometheus.livenessProbe }}
+            path: {{ .path }}
+            port: {{ .port }}
+            initialDelaySeconds: {{ .initialDelaySeconds }}
+            periodSeconds: {{ .periodSeconds }}
+            {{- end }}
+        {{- end }}
+        {{- if .Values.prometheus.readinessProbe.enabled }}
+        readinessProbe:
+          httpGet:
+            {{- with .Values.prometheus.readinessProbe }}
+            path: {{ .path }}
+            port: {{ .port }}
+            initialDelaySeconds: {{ .initialDelaySeconds }}
+            periodSeconds: {{ .periodSeconds }}
+            {{- end }}
+        {{- end }}

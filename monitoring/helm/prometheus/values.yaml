@@ -1,0 +1,47 @@
+prometheus:
+  name: prometheus
+  namespace: monitoring
+  replicaCount: 1
+
+  containers:
+    image: localhost:5000/prometheus:latest
+    pullPolicy: Always
+
+  SecurityContext:
+    enabled: true
+    runAsUser: 10000
+    runAsNonRoot: true
+    runAsGroup: 10001
+    fsGroup: 10001
+
+  ports:
+    containerPort: 9090
+    protocol: TCP
+
+  resources:
+    requests:
+      memory: "500Mi"
+      cpu: "200m"
+    limits:
+      memory: "750Mi"
+      cpu: "250m"
+
+  livenessProbe:
+    enabled: true
+    path: "/healtz"
+    port: "http"
+    initialDelaySeconds: 10
+    periodSeconds: 10
+
+  readinessProbe:
+    enabled: true
+    path: /status
+    port: http
+    initialDelaySeconds: 10
+    periodSeconds: 3
+
+  environment:
+    enabled: false
+    variables:
+    - name: ""
+      value: ""
