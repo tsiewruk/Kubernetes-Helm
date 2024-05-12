@@ -1,6 +1,10 @@
-prometheus:
+common:
   name: prometheus
   namespace: monitoring
+  ports:
+    containerPort: 9090
+
+prometheus:
   replicaCount: 1
 
   containers:
@@ -28,10 +32,13 @@ prometheus:
 
   livenessProbe:
     enabled: true
-    path: "/healtz"
-    port: "http"
-    initialDelaySeconds: 10
+    failureThreshold: 3
+    initialDelaySeconds: 30
     periodSeconds: 10
+    successThreshold: 1
+    tcpSocket:
+      port: 9090
+    timeoutSeconds: 1
 
   readinessProbe:
     enabled: true
@@ -45,3 +52,13 @@ prometheus:
     variables:
     - name: ""
       value: ""
+
+ingress:
+  host: "prometheus.local"
+
+service:
+  type: LoadBalancer
+
+configmap:
+  data:
+  - PROMETHEUS_URL: "prometheus.local"
