@@ -15,7 +15,7 @@ spec:
     spec:
       {{- if .Values.prometheus.SecurityContext.enabled }}
       securityContext:
-        {{- toYaml .Values.prometheus.SecurityContext | nindent 8 }}
+        {{- toYaml .Values.prometheus.SecurityContext.variables | nindent 8 }}
       {{- end }}
       containers:
       - name: {{ .Values.prometheus.name }}
@@ -33,18 +33,12 @@ spec:
           containerPort: {{ .Values.common.ports.containerPort }}
           protocol: {{ .Values.prometheus.ports.protocol | default "TCP" }}
         resources:
-          {{- toYaml .Values.prometheus.resources | nindent 12 }}
+          {{- toYaml .Values.prometheus.resources | nindent 10 }}
         {{- if .Values.prometheus.livenessProbe.enabled }}
         livenessProbe:
-        {{- toYaml .Values.prometheus.livenessProbe | nindent 10 }}
+        {{- toYaml .Values.prometheus.livenessProbe.variables | nindent 10 }}
         {{- end }}
         {{- if .Values.prometheus.readinessProbe.enabled }}
         readinessProbe:
-          httpGet:
-            {{- with .Values.prometheus.readinessProbe }}
-            path: {{ .path }}
-            port: {{ .port }}
-            initialDelaySeconds: {{ .initialDelaySeconds }}
-            periodSeconds: {{ .periodSeconds }}
-            {{- end }}
+        {{- toYaml .Values.prometheus.readinessProbe.variables | nindent 10 }}
         {{- end }}

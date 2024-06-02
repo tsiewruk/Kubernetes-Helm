@@ -1,0 +1,3 @@
+{{/* vim: set filetype=mustache: */}}
+
+{{- include "shared.deployment" . }}

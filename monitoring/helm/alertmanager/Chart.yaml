@@ -1,0 +1,10 @@
+apiVersion: v2
+name: alert-manager
+description: Alert-manager Helm chart.
+type: application
+version: 0.0.0
+appVersion: 0.0.0
+dependencies:
+- name: shared
+  version: 0.0.0
+  repository: file://../../shared

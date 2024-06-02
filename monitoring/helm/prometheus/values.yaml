@@ -13,13 +13,13 @@ prometheus:
 
   SecurityContext:
     enabled: true
-    runAsUser: 10000
-    runAsNonRoot: true
-    runAsGroup: 10001
-    fsGroup: 10001
+    variables:
+      runAsUser: 10000
+      runAsNonRoot: true
+      runAsGroup: 10001
+      fsGroup: 10001
 
   ports:
-    containerPort: 9090
     protocol: TCP
 
   resources:
@@ -32,20 +32,22 @@ prometheus:
 
   livenessProbe:
     enabled: true
-    failureThreshold: 3
-    initialDelaySeconds: 30
-    periodSeconds: 10
-    successThreshold: 1
-    tcpSocket:
-      port: 9090
-    timeoutSeconds: 1
+    variables:
+      failureThreshold: 3
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      successThreshold: 1
+      tcpSocket:
+        port: 9090
+      timeoutSeconds: 1
 
   readinessProbe:
     enabled: true
-    path: /status
-    port: http
-    initialDelaySeconds: 10
-    periodSeconds: 3
+    variables:
+      path: /status
+      port: http
+      initialDelaySeconds: 10
+      periodSeconds: 3
 
   environment:
     enabled: false

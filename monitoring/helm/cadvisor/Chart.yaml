@@ -1,0 +1,9 @@
+apiVersion: v2
+appVersion: 0.0.0
+name: cAdvisor
+type: application
+description: cAdvisor helm chart.
+home: cadvisor.io
+maintainers:
+- name: Tomasz
+version: 0.0.0

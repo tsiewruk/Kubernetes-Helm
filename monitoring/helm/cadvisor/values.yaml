@@ -1,0 +1,87 @@
+common:
+  name: cadvisor
+  namespace: monitoring
+  ports:
+    containerPort: 8080
+  automountServiceAccountToken: false
+  terminationGracePeriodSeconds: 30
+
+cadvisor:
+  replicaCount: 1
+
+  containers:
+    image: localhost:5000/cadvisor:latest
+    pullPolicy: Always
+
+  SecurityContext:
+    enabled: true
+    variables:
+      runAsUser: 10000
+      runAsNonRoot: true
+      runAsGroup: 10001
+      fsGroup: 10001
+
+  ports:
+    protocol: TCP
+
+  resources:
+    requests:
+      memory: "400Mi"
+      cpu: "400m"
+    limits:
+      memory: "2000Mi"
+      cpu: "800m"
+
+  environment:
+    enabled: false
+    variables:
+    - name: ""
+      value: ""
+
+  volumeMounts:
+    enabled: true
+    variables:
+    - name: rootfs
+      mountPath: /rootfs
+      readOnly: true
+    - name: var-run
+      mountPath: /var/run
+      readOnly: true
+    - name: sys
+      mountPath: /sys
+      readOnly: true
+    - name: docker
+      mountPath: /var/lib/docker
+      readOnly: true
+    - name: disk
+      mountPath: /dev/disk
+      readOnly: true
+
+  volumes:
+    enabled: true
+    variables:
+    - name: rootfs
+      hostPath:
+        path: /
+    - name: var-run
+      hostPath:
+        path: /var/run
+    - name: sys
+      hostPath:
+        path: /sys
+    - name: docker
+      hostPath:
+        path: /var/lib/docker
+    - name: disk
+      hostPath:
+        path: /dev/disk
+
+ingress:
+  host: "cadvisor.local"
+
+service:
+  type: ClusterIP
+
+configmap:
+  data:
+  - PROMETHEUS_URL: "cadvisor.local"

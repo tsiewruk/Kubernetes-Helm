@@ -1,8 +1,8 @@
 kind: NetworkPolicy
 apiVersion: networking.k8s.io/v1
 metadata:
-  namespace: grafana
-  name: deny-traffic-to-grafana-from-other-namespaces
+  namespace: monitoring
+  name: deny-traffic-to-monitoring-from-other-namespaces
 spec:
   podSelector:
     matchLabels:
@@ -11,4 +11,4 @@ spec:
     - podSelector: {}
     - namespaceSelector:
         matchLabels:
-          client: "grafana-app"
+          client: "monitoring-app"

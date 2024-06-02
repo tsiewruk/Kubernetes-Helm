@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ .Values.common.name }}-daemonset
+  namespace: {{ .Values.common.namespace }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.common.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.common.name }}
+    spec:
+      {{- if .Values.cadvisor.SecurityContext.enabled }}
+      securityContext:
+        {{- toYaml .Values.cadvisor.SecurityContext.variables | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: {{ .Values.common.name }}
+        image: {{ .Values.cadvisor.containers.image }}
+        imagePullPolicy: {{ .Values.cadvisor.containers.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.common.ports.containerPort }}
+          protocol: {{ .Values.cadvisor.ports.protocol | default "TCP" }}
+        resources:
+          {{- toYaml .Values.cadvisor.resources | nindent 10 }}
+        {{- if .Values.cadvisor.volumeMounts.enabled }}
+        volumeMounts:
+        {{- toYaml .Values.cadvisor.volumeMounts.variables | nindent 8 }}
+        {{- end }}
+      automountServiceAccountToken: {{ .Values.common.automountServiceAccountToken }}
+      terminationGracePeriodSeconds: {{ .Values.common.terminationGracePeriodSeconds }}
+      {{- if .Values.cadvisor.volumes.enabled }}
+      volumes:
+      {{- toYaml .Values.cadvisor.volumes.variables | nindent 8 }}
+      {{- end }}
