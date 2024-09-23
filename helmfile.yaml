@@ -1,0 +1,10 @@
+helmDefaults:
+  atomic: true
+  wait: true
+
+environments:
+  default:
+  prod:
+
+helmfiles:
+- path: rocketchat/helmfile.yaml

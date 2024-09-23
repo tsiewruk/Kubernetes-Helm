@@ -1,0 +1,117 @@
+global:
+  tolerations: []
+  annotations: {}
+
+## Specifies an Enterprise License
+# license: ""
+
+image:
+  repository: registry.rocket.chat/rocketchat/rocket.chat
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+replicaCount: 1
+minAvailable: 1
+
+livenessProbe:
+  enabled: true
+  path: /health
+  initialDelaySeconds: 60
+  periodSeconds: 15
+  timeoutSeconds: 5
+  failureThreshold: 3
+  successThreshold: 1
+
+readinessProbe:
+  enabled: true
+  path: /health
+  initialDelaySeconds: 10
+  periodSeconds: 15
+  timeoutSeconds: 5
+  failureThreshold: 3
+  successThreshold: 1
+
+resources:
+  requests:
+    memory: 512Mi
+    cpu: 300m
+
+securityContext:
+  enabled: true
+  runAsUser: 999
+  fsGroup: 999
+
+extraEnv:
+# - name: MONGO_OPTIONS
+#   value: '{"ssl": "true"}'
+# - name: MONGO_OPLOG_URL
+#   value: mongodb://oploguser:password@rocket-1:27017/local&replicaSet=rs0
+
+extraVolumes:
+# - name: etc-certs
+#   hostPath:
+#     path: /etc/ssl/certs
+#     type: Directory
+# - name: usr-certs
+#   hostPath:
+#     path: /usr/share/ca-certificates
+#     type: Directory
+
+extraVolumeMounts:
+# - mountPath: /etc/ssl/certs
+#   name: etc-certs
+#   readOnly: true
+# - mountPath: /usr/share/ca-certificates
+#   name: usr-certs
+#   readOnly: true
+
+extraInitContainers: []
+# - name: init-myservice
+#   image: busybox
+#   command: ['sh', '-c', 'until nslookup myservice; do echo waiting for myservice; sleep 2; done;']
+
+persistence:
+  enabled: false
+  accessMode: ReadWriteOnce
+  size: 8Gi
+
+podAntiAffinity: ""
+
+podAntiAffinityTopologyKey: kubernetes.io/hostname
+
+affinity: {}
+# nodeAffinity:
+#   requiredDuringSchedulingIgnoredDuringExecution:
+#     nodeSelectorTerms:
+#     - matchExpressions:
+#       - key: kubernetes.io/e2e-az-name
+#         operator: In
+#         values:
+#         - e2e-az1
+#         - e2e-az2
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name:
+
+ingress:
+  enabled: true
+  pathType: Prefix
+  path: /
+  ingressClassName: "nginx"
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: letsencrypt
+  tls:
+  - secretName: rocketchat-tls
+    hosts:
+    - rocketchat.local
+
+service:
+  annotations: {}
+  labels: {}
+  type: ClusterIP
+  port: 80
+  loadBalancerIP: ""

@@ -1,0 +1,46 @@
+## Use an existing secret file with the MongoDB Url and OplogUrl
+existingMongodbSecret: ""
+
+## MongoDB URL if using an externally provisioned MongoDB
+externalMongodbUrl: mongodb://user:password@localhost:27017/rocketchat
+externalMongodbOplogUrl: mongodb://user:password@localhost:27017/local?replicaSet=rs0&authSource=admin
+
+mongodb:
+  enabled: true
+
+  initdbScriptsConfigMap: rocketchat-mongodb-fix-clustermonitor-role-configmap
+
+  auth:
+    rootPassword: whatever
+    usernames:
+    - rocketchat
+    passwords:
+    - whatever
+    databases:
+    - rocketchat-db
+
+  architecture: replicaset
+  replicaCount: 1
+  arbiter:
+    enabled: false
+    pdb:
+      minAvailable: 0
+  pdb:
+    minAvailable: 0
+
+    # key:
+
+  persistence:
+    enabled: true
+    ## mongodb data Persistent Volume Storage Class
+    ## If defined, storageClassName: <storageClass>
+    ## If set to "-", storageClassName: "", which disables dynamic provisioning
+    ## If undefined (the default) or set to null, no storageClassName spec is
+    ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+    ##   GKE, AWS & OpenStack)
+    ##
+    # storageClass: "-"
+    accessMode: ReadWriteOnce
+    size: 8Gi
+
+  volumePermissions: {enabled: true}

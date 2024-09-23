@@ -1,0 +1,14 @@
+repositories:
+- name: rocketchat
+  url: https://rocketchat.github.io/helm-charts
+- name: mongodb
+  url: https://charts.bitnami.com/bitnami
+
+releases:
+- name: rocketchat
+  chart: rocketchat/rocketchat
+  namespace: rocketchat
+  createNamespace: true
+  version: 6.22
+  values:
+  - mongodb.yaml
