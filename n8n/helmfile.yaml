@@ -1,0 +1,16 @@
+repositories:
+- name: open-8gears
+  url: 8gears.container-registry.com/library
+  oci: true
+- name: redis
+  url: https://charts.bitnami.com/bitnami
+
+releases:
+- name: n8n
+  chart: open-8gears/n8n
+  namespace: n8n
+  createNamespace: true
+  version: 0.25.2
+  values:
+  - redis.yaml
+  - postgres.yaml

@@ -8,3 +8,4 @@ environments:
 
 helmfiles:
 - path: rocketchat/helmfile.yaml
+- path: n8n/helmfile.yaml

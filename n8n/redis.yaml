@@ -1,0 +1,9 @@
+redis:
+  enabled: false
+  architecture: standalone
+
+  master:
+    persistence:
+      enabled: true
+      existingClaim: ""
+      size: 2Gi
