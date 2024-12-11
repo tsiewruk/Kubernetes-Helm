@@ -13,6 +13,14 @@ config:
       - http01:
           ingress:
             class: nginx
+            
+resources:
+  limits:
+    cpu: 30m
+    memory: 64Mi
+  requests:
+    cpu: 10m
+    memory: 32Mi
 
 webhook:
   resources:
