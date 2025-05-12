@@ -1,0 +1,18 @@
+repositories:
+- name: longhorn
+  url: https://charts.longhorn.io
+
+releases:
+- name: longhorn
+  chart: longhorn/longhorn
+  namespace: longhorn-system
+  createNamespace: true
+  # https://github.com/longhorn/longhorn/releases
+  version: 1.8.1
+  values:
+  - values.yaml
+  hooks:
+    - events: ["apply"]
+      showlogs: true
+      command: kubectl
+      args: ["apply", "-n cert-manager", "-f", "ingress.yaml"]

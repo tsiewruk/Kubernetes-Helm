@@ -1,0 +1,7 @@
+defaultSettings:
+  defaultDataPath: "/var/lib/longhorn"
+  createDefaultDiskLabeledNodes: true
+  replicaCount: 2
+  guaranteedEngineCPU: 0.25
+  guaranteedEngineManagerCPU: 0.25
+  defaultReplicaCount: 2

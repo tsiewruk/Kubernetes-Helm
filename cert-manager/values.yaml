@@ -1,19 +1,6 @@
-config:
-  apiVersion: cert-manager.io/v1
-  kind: ClusterIssuer
-  metadata:
-    name: letsencrypt
-  spec:
-    acme:
-      email: tomczak111@gmail.com
-      privateKeySecretRef:
-        name: issuer-account-key
-      server: https://acme-v02.api.letsencrypt.org/directory
-      solvers:
-      - http01:
-          ingress:
-            class: nginx
-            
+# crds:
+#   enabled: true
+
 resources:
   limits:
     cpu: 30m
@@ -56,11 +43,11 @@ cainjector:
       cpu: 10m
       memory: 32Mi
 
-startupapicheck:
-  resources:
-    limits:
-      cpu: 30m
-      memory: 64Mi
-    requests:
-      cpu: 10m
-      memory: 32Mi
+# startupapicheck:
+#   resources:
+#     limits:
+#       cpu: 30m
+#       memory: 64Mi
+#     requests:
+#       cpu: 10m
+#       memory: 32Mi
