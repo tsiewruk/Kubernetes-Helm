@@ -1,0 +1,249 @@
+namespace: my-app-namespace
+
+replicaCount: 3
+
+strategy:
+  type: RollingUpdate # Options: RollingUpdate or Recreate
+  rollingUpdate:
+    maxSurge: 25%
+    maxUnavailable: 25%
+
+initContainers:
+  enabled: false
+  containers: []
+  # Example:
+  # containers:
+  #   - name: init-myservice
+  #     image: busybox
+  #     command: ["sh", "-c", "echo Waiting... && sleep 10"]
+
+sidecars:
+  enabled: false
+  containers:
+  - name: nginx-sidecar
+    image: nginx:alpine
+    command: [ "sh", "-c" ]
+    args: [ "until nslookup my-db; do echo waiting for db; sleep 2; done" ]
+    ports:
+    - containerPort: 80
+
+image:
+  repository: my-image
+  tag: latest
+  pullPolicy: IfNotPresent
+
+livenessProbe:
+  enabled: true
+  path: /healthz
+  port: 8080
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  enabled: true
+  path: /readyz
+  port: 8080
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "500m"
+    memory: "256Mi"
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations: {}
+    # Example if using cert-manager:
+    # kubernetes.io/tls-acme: "true"
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  hosts:
+  - host: my-app.local
+    paths:
+    - path: /
+      pathType: Prefix
+  tls: []
+    # - hosts:
+    #     - my-app.local
+    #   secretName: my-app-tls
+
+networkPolicy:
+  enabled: false
+
+  podSelector: {} # Match all pods in the deployment by default
+
+  ingress:
+    fromNamespaces:
+    - kube-system
+    - monitoring
+    fromCIDRs:
+    - 192.168.1.0/24
+    - 10.0.0.0/16
+
+  # Optional: add egress rules later if needed
+  egress:
+    enabled: false
+    toCIDRs: []
+
+securityContext:
+  enabled: true
+  pod:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 3000
+    fsGroup: 2000
+
+  container:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+      - ALL
+      add:
+      - NET_BIND_SERVICE
+
+serviceAccount:
+  create: true
+  name: my-app-sa
+
+env:
+- name: ENVIRONMENT
+  value: "production"
+- name: LOG_LEVEL
+  value: "info"
+
+persistentVolumes:
+  enabled: false
+
+  # Define the claim
+  claim:
+    name: my-app-pvc
+    storageClassName: standard
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: 1Gi
+
+  # Mount the claim into the container
+  mount:
+    name: data-volume
+    mountPath: /data
+
+volumes:
+  enabled: true
+  definitions:
+  - name: config-volume
+    configMap:
+      name: my-configmap
+  - name: secret-volume
+    secret:
+      secretName: my-secret
+  - name: cache-volume
+    emptyDir: {}
+
+  mounts:
+  - name: config-volume
+    mountPath: /etc/config
+    readOnly: true
+  - name: secret-volume
+    mountPath: /etc/secret
+    readOnly: true
+  - name: cache-volume
+    mountPath: /tmp/cache
+
+affinity:
+  podAffinity:
+    enabled: false
+    requiredDuringSchedulingIgnoredDuringExecution: []
+    preferredDuringSchedulingIgnoredDuringExecution: []
+
+  nodeAffinity:
+    enabled: false
+    requiredDuringSchedulingIgnoredDuringExecution: []
+    preferredDuringSchedulingIgnoredDuringExecution: []
+
+service:
+  enabled: true
+  type: ClusterIP # Options: ClusterIP, NodePort, LoadBalancer
+  port: 80
+  targetPort: 8080
+  nodePort: null # Only used if type is NodePort
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  cpu:
+    enabled: true
+    averageUtilization: 60
+  memory:
+    enabled: true
+    averageUtilization: 70
+
+cronjob:
+  enabled: true
+  name: my-cronjob
+  schedule: "0 */6 * * *" # Every 6 hours
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  concurrencyPolicy: "Forbid" # Allow | Forbid | Replace
+  startingDeadlineSeconds: 100
+
+  image:
+    repository: busybox
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  command: [ "/bin/sh", "-c" ]
+  args: [ "echo Hello from the CronJob! && date" ]
+
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"
+
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+
+job:
+  enabled: true
+  name: my-job
+
+  image:
+    repository: busybox
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  command: [ "/bin/sh", "-c" ]
+  args: [ "echo Hello from the Job! && sleep 10 && echo Done." ]
+
+  backoffLimit: 2
+  restartPolicy: Never
+  ttlSecondsAfterFinished: 100
+
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"
+
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000

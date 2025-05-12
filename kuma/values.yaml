@@ -1,0 +1,19 @@
+controlPlane:
+  resources:
+    requests:
+      cpu: 500m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hostname: kuma.psuja.dev
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt
+#      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    path: /
+    pathType: Exact
+    servicePort: 5681

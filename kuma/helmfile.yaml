@@ -1,0 +1,13 @@
+repositories:
+- name: kuma
+  url: https://kumahq.github.io/charts
+
+releases:
+- name: kuma
+  chart: kuma/kuma
+  namespace: monitoring
+  createNamespace: true
+  # https://github.com/kumahq/charts
+  version: 2.9.2
+  values:
+  - values.yaml
