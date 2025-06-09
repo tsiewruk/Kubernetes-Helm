@@ -1,0 +1,30 @@
+{{- define "common.pvc" -}}
+{{- if .Values.persistentVolumes.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.persistentVolumes.claim.name | default (printf "%s-pvc" (include "common.fullname" .)) }}
+  namespace: {{ include "common.namespaceName" . }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+  {{- with .Values.persistentVolumes.claim.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    {{- toYaml .Values.persistentVolumes.claim.accessModes | nindent 4 }}
+  {{- if .Values.persistentVolumes.claim.storageClassName }}
+  storageClassName: {{ .Values.persistentVolumes.claim.storageClassName }}
+  {{- end }}
+  resources:
+    {{- toYaml .Values.persistentVolumes.claim.resources | nindent 4 }}
+  {{- if .Values.persistentVolumes.claim.selector }}
+  selector:
+    {{- toYaml .Values.persistentVolumes.claim.selector | nindent 4 }}
+  {{- end }}
+  {{- if .Values.persistentVolumes.claim.volumeName }}
+  volumeName: {{ .Values.persistentVolumes.claim.volumeName }}
+  {{- end }}
+{{- end }}
+{{- end -}} 
