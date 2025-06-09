@@ -1,6 +1,0 @@
-apiVersion: v2
-name: shared
-description: Shared Helm charts.
-type: library
-version: 0.0.0
-appVersion: 0.0.0
