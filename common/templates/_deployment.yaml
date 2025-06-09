@@ -88,9 +88,27 @@ spec:
               value: {{ .value | quote }}
             {{- end }}
           {{- end }}
-          {{- if .Values.volumes.enabled }}
+          {{- if or .Values.volumes.enabled .Values.persistentVolumes.enabled }}
           volumeMounts:
-            {{- toYaml .Values.volumes.mounts | nindent 12 }}
+            {{- if .Values.persistentVolumes.enabled }}
+            - name: {{ .Values.persistentVolumes.mount.name }}
+              mountPath: {{ .Values.persistentVolumes.mount.mountPath }}
+              {{- if .Values.persistentVolumes.mount.readOnly }}
+              readOnly: {{ .Values.persistentVolumes.mount.readOnly }}
+              {{- end }}
+            {{- end }}
+            {{- if .Values.volumes.enabled }}
+            {{- range .Values.volumes.mounts }}
+            - name: {{ .name }}
+              mountPath: {{ .mountPath }}
+              {{- if .readOnly }}
+              readOnly: {{ .readOnly }}
+              {{- end }}
+              {{- if .subPath }}
+              subPath: {{ .subPath }}
+              {{- end }}
+            {{- end }}
+            {{- end }}
           {{- end }}
         {{- if .Values.sidecars.enabled }}
         {{- range .Values.sidecars.containers }}
@@ -138,8 +156,15 @@ spec:
           {{- end }}
         {{- end }}
       {{- end }}
-      {{- if .Values.volumes.enabled }}
+      {{- if or .Values.volumes.enabled .Values.persistentVolumes.enabled }}
       volumes:
+        {{- if .Values.persistentVolumes.enabled }}
+        - name: {{ .Values.persistentVolumes.mount.name }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistentVolumes.claim.name | default (printf "%s-pvc" (include "common.fullname" .)) }}
+        {{- end }}
+        {{- if .Values.volumes.enabled }}
         {{- toYaml .Values.volumes.definitions | nindent 8 }}
+        {{- end }}
       {{- end }}
 {{- end -}} 

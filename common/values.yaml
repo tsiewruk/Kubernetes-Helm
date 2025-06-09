@@ -280,27 +280,26 @@ env: []
 # persistentVolumes:
 #   enabled: true
 #   claim:
+#     name: my-existing-pvc  # Leave empty to auto-generate name
 #     storageClassName: "fast-ssd"
 #     accessModes:
 #       - ReadWriteOnce
 #     resources:
 #       requests:
 #         storage: 10Gi
+#     annotations:
+#       volume.beta.kubernetes.io/storage-provisioner: kubernetes.io/aws-ebs
 #   mount:
 #     mountPath: /data
 persistentVolumes:
-  enabled: false
+  enabled: true
   claim:
-    name: ""
-    storageClassName: "standard"
-    accessModes:
-      - ReadWriteOnce
+    storageClassName: "fast-ssd"
     resources:
       requests:
-        storage: 1Gi
+        storage: 5Gi
   mount:
-    name: data-volume
-    mountPath: /data
+    mountPath: /app/data
 
 # Generic volumes configuration (ConfigMaps, Secrets, EmptyDir)
 # Example usage:

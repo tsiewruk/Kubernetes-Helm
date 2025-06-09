@@ -72,12 +72,15 @@ initContainers:
       args: 
         - |
           echo "Setting up permissions and directories..."
-          mkdir -p /shared/logs /shared/cache
-          chmod 755 /shared/logs /shared/cache
+          mkdir -p /shared/logs /shared/cache /app/data/logs /app/data/uploads /app/data/cache
+          chmod 755 /shared/logs /shared/cache /app/data/logs /app/data/uploads /app/data/cache
+          echo "Persistent storage initialized successfully"
           echo "Init container completed successfully"
       volumeMounts:
         - name: shared-data
           mountPath: /shared
+        - name: app-data
+          mountPath: /app/data
     - name: wait-for-db
       image: busybox:1.35
       command: ["sh", "-c"]
@@ -111,6 +114,9 @@ sidecars:
       volumeMounts:
         - name: shared-data
           mountPath: /shared
+        - name: app-data
+          mountPath: /app/data
+          readOnly: true
         - name: fluent-bit-config
           mountPath: /fluent-bit/etc
       resources:
@@ -169,6 +175,12 @@ env:
     value: "3600"
   - name: API_TIMEOUT
     value: "30"
+  - name: DATA_DIR
+    value: "/app/data"
+  - name: LOG_DIR
+    value: "/app/data/logs"
+  - name: UPLOAD_DIR
+    value: "/app/data/uploads"
   - name: NODE_NAME
     valueFrom:
       fieldRef:
@@ -304,18 +316,23 @@ serviceAccount:
 
 # Persistent volumes configuration
 persistentVolumes:
-  enabled: false
+  enabled: true
   claim:
-    name: ""
-    storageClassName: "standard"
+    name: ""  # Auto-generate: example-app-pvc
+    storageClassName: "longhorn"
     accessModes:
       - ReadWriteOnce
     resources:
       requests:
-        storage: 1Gi
+        storage: 10Gi
+    annotations:
+      longhorn.io/migratable: "true"
+    selector: {}
+    volumeName: ""
   mount:
-    name: data-volume
-    mountPath: /data
+    name: app-data
+    mountPath: /app/data
+    readOnly: false
 
 # Generic volumes configuration (ConfigMaps, Secrets, EmptyDir)
 volumes:
@@ -347,6 +364,9 @@ volumes:
     - name: nginx-config
       mountPath: /etc/nginx/conf.d
       readOnly: true
+    - name: app-data
+      mountPath: /app/logs
+      subPath: logs
 
 # =============================================================================
 # POD SCHEDULING

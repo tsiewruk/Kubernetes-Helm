@@ -63,6 +63,30 @@ metadata:
     environment: development
     team: platform
 ---
+# Source: example-app/templates/pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: release-name-example-app-pvc
+  namespace: example-app
+  labels:
+    helm.sh/chart: example-app-0.1.0
+    app.kubernetes.io/name: example-app
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/managed-by: Helm
+    environment: development
+    team: platform
+  annotations:
+    longhorn.io/migratable: "true"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 10Gi
+---
 # Source: example-app/templates/service.yaml
 apiVersion: v1
 kind: Service
@@ -133,8 +157,9 @@ spec:
         - args:
           - |
             echo "Setting up permissions and directories..."
-            mkdir -p /shared/logs /shared/cache
-            chmod 755 /shared/logs /shared/cache
+            mkdir -p /shared/logs /shared/cache /app/data/logs /app/data/uploads /app/data/cache
+            chmod 755 /shared/logs /shared/cache /app/data/logs /app/data/uploads /app/data/cache
+            echo "Persistent storage initialized successfully"
             echo "Init container completed successfully"
           command:
           - sh
@@ -144,6 +169,8 @@ spec:
           volumeMounts:
           - mountPath: /shared
             name: shared-data
+          - mountPath: /app/data
+            name: app-data
         - args:
           - |
             echo "Waiting for database to be ready..."
@@ -215,6 +242,12 @@ spec:
               value: "3600"
             - name: API_TIMEOUT
               value: "30"
+            - name: DATA_DIR
+              value: "/app/data"
+            - name: LOG_DIR
+              value: "/app/data/logs"
+            - name: UPLOAD_DIR
+              value: "/app/data/uploads"
             - name: NODE_NAME
               value: 
             - name: POD_NAME
@@ -224,11 +257,16 @@ spec:
             - name: POD_IP
               value: 
           volumeMounts:
-            - mountPath: /shared
-              name: shared-data
-            - mountPath: /etc/nginx/conf.d
-              name: nginx-config
+            - name: app-data
+              mountPath: /app/data
+            - name: shared-data
+              mountPath: /shared
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d
               readOnly: true
+            - name: app-data
+              mountPath: /app/logs
+              subPath: logs
         - name: log-shipper
           image: fluent/fluent-bit:2.1.10
           ports:
@@ -242,6 +280,9 @@ spec:
           volumeMounts:
             - mountPath: /shared
               name: shared-data
+            - mountPath: /app/data
+              name: app-data
+              readOnly: true
             - mountPath: /fluent-bit/etc
               name: fluent-bit-config
         - name: metrics-exporter
@@ -257,6 +298,9 @@ spec:
               name: sys
               readOnly: true
       volumes:
+        - name: app-data
+          persistentVolumeClaim:
+            claimName: release-name-example-app-pvc
         - emptyDir: {}
           name: shared-data
         - configMap:
