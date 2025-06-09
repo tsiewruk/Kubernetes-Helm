@@ -3,21 +3,28 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "common.fullname" . }}
+  name: {{ .Values.service.name | default (include "common.fullname" .) }}
   namespace: {{ include "common.namespaceName" . }}
   labels:
     {{- include "common.labels" . | nindent 4 }}
+    {{- if .Values.component }}
+    app.kubernetes.io/component: {{ .Values.component }}
+    {{- end }}
 spec:
   type: {{ .Values.service.type | default "ClusterIP" }}
   ports:
     - port: {{ .Values.service.port | default 80 }}
       targetPort: {{ .Values.service.targetPort | default 8080 }}
       protocol: TCP
-      name: http
+      name: {{ .Values.service.portName | default "http" }}
       {{- if and (eq .Values.service.type "NodePort") .Values.service.nodePort }}
       nodePort: {{ .Values.service.nodePort }}
       {{- end }}
   selector:
+    {{- if .Values.service.selectorLabels }}
+    {{- toYaml .Values.service.selectorLabels | nindent 4 }}
+    {{- else }}
     {{- include "common.selectorLabels" . | nindent 4 }}
+    {{- end }}
 {{- end }}
 {{- end -}} 

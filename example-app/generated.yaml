@@ -63,6 +63,67 @@ metadata:
     environment: development
     team: platform
 ---
+# Source: example-app/templates/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: release-name-example-app-secret
+  namespace: example-app
+  labels:
+    helm.sh/chart: example-app-0.1.0
+    app.kubernetes.io/name: example-app
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/managed-by: Helm
+    environment: development
+    team: platform
+  annotations:
+    description: Example application secrets
+type: Opaque
+data:
+  DB_PASSWORD: cGFzc3dvcmQ=
+  JWT_SECRET: bXlqd3RzZWNyZXQ=
+  REDIS_PASSWORD: cmVkaXNwYXNz
+stringData:
+  API_KEY: "example-api-key-12345"
+  ENCRYPTION_KEY: "my-encryption-key-67890"
+  WEBHOOK_SECRET: "webhook-secret-abcdef"
+---
+# Source: example-app/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: release-name-example-app-configmap
+  namespace: example-app
+  labels:
+    helm.sh/chart: example-app-0.1.0
+    app.kubernetes.io/name: example-app
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/managed-by: Helm
+    environment: development
+    team: platform
+  annotations:
+    description: Example application configuration
+data:
+  API_TIMEOUT: "30"
+  APP_NAME: "example-app"
+  APP_VERSION: "1.21.0"
+  CACHE_TTL: "3600"
+  DB_HOST: "postgresql.example-app.svc.cluster.local"
+  DB_NAME: "example_app"
+  DB_PORT: "5432"
+  DEBUG_MODE: "false"
+  FEATURE_CACHING: "true"
+  FEATURE_LOGGING: "true"
+  FEATURE_METRICS: "true"
+  LOG_LEVEL: "info"
+  MAX_CONNECTIONS: "100"
+  REDIS_DB: "0"
+  REDIS_HOST: "redis.example-app.svc.cluster.local"
+  REDIS_PORT: "6379"
+  WORKER_PROCESSES: "4"
+---
 # Source: example-app/templates/pvc.yaml
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -224,24 +285,108 @@ spec:
           env:
             - name: APP_ENV
               value: "development"
-            - name: LOG_LEVEL
-              value: "info"
             - name: PORT
               value: "80"
-            - name: DATABASE_URL
-              value: "postgresql://app_user:app_password@postgres-service:5432/example_app"
-            - name: REDIS_URL
-              value: "redis://redis-service:6379/0"
+            - name: APP_NAME
+              valueFrom:
+                configMapKeyRef:
+                  key: APP_NAME
+                  name: example-app-configmap
             - name: APP_VERSION
-              value: "1.21.0"
+              valueFrom:
+                configMapKeyRef:
+                  key: APP_VERSION
+                  name: example-app-configmap
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  key: LOG_LEVEL
+                  name: example-app-configmap
+            - name: DEBUG_MODE
+              valueFrom:
+                configMapKeyRef:
+                  key: DEBUG_MODE
+                  name: example-app-configmap
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  key: DB_HOST
+                  name: example-app-configmap
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  key: DB_PORT
+                  name: example-app-configmap
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  key: DB_NAME
+                  name: example-app-configmap
+            - name: REDIS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  key: REDIS_HOST
+                  name: example-app-configmap
+            - name: REDIS_PORT
+              valueFrom:
+                configMapKeyRef:
+                  key: REDIS_PORT
+                  name: example-app-configmap
+            - name: REDIS_DB
+              valueFrom:
+                configMapKeyRef:
+                  key: REDIS_DB
+                  name: example-app-configmap
             - name: WORKER_PROCESSES
-              value: "4"
+              valueFrom:
+                configMapKeyRef:
+                  key: WORKER_PROCESSES
+                  name: example-app-configmap
             - name: MAX_CONNECTIONS
-              value: "100"
+              valueFrom:
+                configMapKeyRef:
+                  key: MAX_CONNECTIONS
+                  name: example-app-configmap
             - name: CACHE_TTL
-              value: "3600"
+              valueFrom:
+                configMapKeyRef:
+                  key: CACHE_TTL
+                  name: example-app-configmap
             - name: API_TIMEOUT
-              value: "30"
+              valueFrom:
+                configMapKeyRef:
+                  key: API_TIMEOUT
+                  name: example-app-configmap
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: DB_PASSWORD
+                  name: example-app-secret
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: REDIS_PASSWORD
+                  name: example-app-secret
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  key: JWT_SECRET
+                  name: example-app-secret
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: API_KEY
+                  name: example-app-secret
+            - name: ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: ENCRYPTION_KEY
+                  name: example-app-secret
+            - name: WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  key: WEBHOOK_SECRET
+                  name: example-app-secret
             - name: DATA_DIR
               value: "/app/data"
             - name: LOG_DIR
@@ -249,13 +394,21 @@ spec:
             - name: UPLOAD_DIR
               value: "/app/data/uploads"
             - name: NODE_NAME
-              value: 
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
             - name: POD_NAME
-              value: 
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
             - name: POD_NAMESPACE
-              value: 
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
             - name: POD_IP
-              value: 
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
           volumeMounts:
             - name: app-data
               mountPath: /app/data

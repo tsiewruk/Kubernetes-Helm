@@ -2,17 +2,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "common.fullname" . }}
+  name: {{ .Values.deploymentName | default (include "common.fullname" .) }}
   namespace: {{ include "common.namespaceName" . }}
   labels:
     {{- include "common.labels" . | nindent 4 }}
+    {{- if .Values.component }}
+    app.kubernetes.io/component: {{ .Values.component }}
+    {{- end }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount | default 1 }}
   {{- end }}
   selector:
     matchLabels:
+      {{- if .Values.selectorLabels }}
+      {{- toYaml .Values.selectorLabels | nindent 6 }}
+      {{- else }}
       {{- include "common.selectorLabels" . | nindent 6 }}
+      {{- end }}
   strategy:
     type: {{ .Values.strategy.type | default "RollingUpdate" }}
     {{- if and (eq (.Values.strategy.type | default "RollingUpdate") "RollingUpdate") .Values.strategy.rollingUpdate }}
@@ -27,9 +34,10 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
+        {{- if .Values.podLabels }}
+        {{- toYaml .Values.podLabels | nindent 8 }}
+        {{- else }}
         {{- include "common.labels" . | nindent 8 }}
-        {{- with .Values.podLabels }}
-        {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
       {{- if .Values.serviceAccount.create }}
@@ -44,12 +52,12 @@ spec:
         {{- toYaml .Values.initContainers.containers | nindent 8 }}
       {{- end }}
       containers:
-        - name: {{ include "common.name" . }}
+        - name: {{ .Values.containerName | default (include "common.name" .) }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
           {{- if .Values.containerPort }}
           ports:
-            - name: http
+            - name: {{ .Values.portName | default "http" }}
               containerPort: {{ .Values.containerPort }}
               protocol: TCP
           {{- end }}
@@ -85,7 +93,12 @@ spec:
           env:
             {{- range .Values.env }}
             - name: {{ .name }}
+              {{- if .value }}
               value: {{ .value | quote }}
+              {{- else if .valueFrom }}
+              valueFrom:
+                {{- toYaml .valueFrom | nindent 16 }}
+              {{- end }}
             {{- end }}
           {{- end }}
           {{- if or .Values.volumes.enabled .Values.persistentVolumes.enabled }}

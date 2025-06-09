@@ -452,5 +452,50 @@ cronjob:
     runAsGroup: 1000
 
 # =============================================================================
+# CONFIGMAP CONFIGURATION
+# =============================================================================
+
+# ConfigMap configuration
+# Example usage:
+# configMap:
+#   enabled: true
+#   name: my-config
+#   annotations:
+#     description: "Application configuration"
+#   data:
+#     DATABASE_URL: "postgresql://localhost:5432/mydb"
+#     LOG_LEVEL: "info"
+#     FEATURE_FLAG: "true"
+configMap:
+  enabled: false
+  name: ""  # Leave empty to auto-generate: <release-name>-configmap
+  annotations: {}
+  data: {}
+
+# =============================================================================
+# SECRET CONFIGURATION
+# =============================================================================
+
+# Secret configuration
+# Example usage:
+# secret:
+#   enabled: true
+#   name: my-secret
+#   type: Opaque
+#   annotations:
+#     description: "Application secrets"
+#   data:
+#     DB_PASSWORD: "cGFzc3dvcmQ="  # Base64 encoded
+#   stringData:
+#     API_KEY: "my-plain-text-key"  # Plain text (will be base64 encoded)
+secret:
+  enabled: false
+  name: ""  # Leave empty to auto-generate: <release-name>-secret
+  type: Opaque
+  annotations: {}
+  data: {}      # Base64 encoded values
+  stringData: {} # Plain text values (will be base64 encoded automatically)
+
+# =============================================================================
 # END OF CONFIGURATION
 # =============================================================================
