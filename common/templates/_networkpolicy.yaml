@@ -1,0 +1,50 @@
+{{- define "common.networkpolicy" -}}
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespaceName" . }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    {{- if .Values.networkPolicy.podSelector }}
+    {{- toYaml .Values.networkPolicy.podSelector | nindent 4 }}
+    {{- else }}
+    matchLabels:
+      {{- include "common.selectorLabels" . | nindent 6 }}
+    {{- end }}
+  policyTypes:
+  - Ingress
+  {{- if .Values.networkPolicy.egress.enabled }}
+  - Egress
+  {{- end }}
+  ingress:
+  {{- if .Values.networkPolicy.ingress.fromNamespaces }}
+  {{- range .Values.networkPolicy.ingress.fromNamespaces }}
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: {{ . }}
+  {{- end }}
+  {{- end }}
+  {{- if .Values.networkPolicy.ingress.fromCIDRs }}
+  {{- range .Values.networkPolicy.ingress.fromCIDRs }}
+  - from:
+    - ipBlock:
+        cidr: {{ . }}
+  {{- end }}
+  {{- end }}
+  {{- if .Values.networkPolicy.egress.enabled }}
+  egress:
+  {{- if .Values.networkPolicy.egress.toCIDRs }}
+  {{- range .Values.networkPolicy.egress.toCIDRs }}
+  - to:
+    - ipBlock:
+        cidr: {{ . }}
+  {{- end }}
+  {{- end }}
+  {{- end }}
+{{- end }}
+{{- end -}} 

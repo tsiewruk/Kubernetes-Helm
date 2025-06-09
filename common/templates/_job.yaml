@@ -1,0 +1,27 @@
+{{- define "common.job" -}}
+{{- if .Values.job.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}-job
+  namespace: {{ include "common.namespaceName" . }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  backoffLimit: {{ .Values.job.backoffLimit }}
+  ttlSecondsAfterFinished: {{ .Values.job.ttlSecondsAfterFinished }}
+  template:
+    spec:
+      restartPolicy: {{ .Values.job.restartPolicy }}
+      securityContext:
+        {{- toYaml .Values.job.securityContext | nindent 8 }}
+      containers:
+        - name: {{ include "common.name" . }}-job
+          image: "{{ .Values.job.image.repository }}:{{ .Values.job.image.tag }}"
+          imagePullPolicy: {{ .Values.job.image.pullPolicy }}
+          command: {{ toJson .Values.job.command }}
+          args: {{ toJson .Values.job.args }}
+          resources:
+            {{- toYaml .Values.job.resources | nindent 12 }}
+{{- end }}
+{{- end -}}

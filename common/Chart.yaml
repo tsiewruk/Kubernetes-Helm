@@ -1,0 +1,6 @@
+apiVersion: v2
+name: kubernetes-common-library
+description: A Helm library chart with common Kubernetes templates
+type: library
+version: 1.0.0
+appVersion: "1.0"

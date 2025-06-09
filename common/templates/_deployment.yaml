@@ -1,0 +1,145 @@
+{{- define "common.deployment" -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ include "common.namespaceName" . }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount | default 1 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "common.selectorLabels" . | nindent 6 }}
+  strategy:
+    type: {{ .Values.strategy.type | default "RollingUpdate" }}
+    {{- if and (eq (.Values.strategy.type | default "RollingUpdate") "RollingUpdate") .Values.strategy.rollingUpdate }}
+    rollingUpdate:
+      maxSurge: {{ .Values.strategy.rollingUpdate.maxSurge | default "25%" }}
+      maxUnavailable: {{ .Values.strategy.rollingUpdate.maxUnavailable | default "25%" }}
+    {{- end }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "common.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- if .Values.serviceAccount.create }}
+      serviceAccountName: {{ include "common.serviceAccountName" . }}
+      {{- end }}
+      {{- if .Values.securityContext.enabled }}
+      securityContext:
+        {{- toYaml .Values.securityContext.pod | nindent 8 }}
+      {{- end }}
+      {{- if .Values.initContainers.enabled }}
+      initContainers:
+        {{- toYaml .Values.initContainers.containers | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ include "common.name" . }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
+          {{- if .Values.containerPort }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.containerPort }}
+              protocol: TCP
+          {{- end }}
+          {{- if .Values.securityContext.enabled }}
+          securityContext:
+            {{- toYaml .Values.securityContext.container | nindent 12 }}
+          {{- end }}
+          {{- if .Values.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.livenessProbe.path }}
+              port: {{ .Values.livenessProbe.port }}
+            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.readinessProbe.path }}
+              port: {{ .Values.readinessProbe.port }}
+            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.resources }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- end }}
+          {{- if .Values.env }}
+          env:
+            {{- range .Values.env }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+          {{- end }}
+          {{- if .Values.volumes.enabled }}
+          volumeMounts:
+            {{- toYaml .Values.volumes.mounts | nindent 12 }}
+          {{- end }}
+        {{- if .Values.sidecars.enabled }}
+        {{- range .Values.sidecars.containers }}
+        - name: {{ .name }}
+          image: {{ .image }}
+          {{- if .imagePullPolicy }}
+          imagePullPolicy: {{ .imagePullPolicy }}
+          {{- end }}
+          {{- if .ports }}
+          ports:
+            {{- toYaml .ports | nindent 12 }}
+          {{- end }}
+          {{- if .env }}
+          env:
+            {{- toYaml .env | nindent 12 }}
+          {{- end }}
+          {{- if .volumeMounts }}
+          volumeMounts:
+            {{- toYaml .volumeMounts | nindent 12 }}
+          {{- end }}
+        {{- end }}
+        {{- end }}
+      {{- if or .Values.affinity.podAffinity.enabled .Values.affinity.nodeAffinity.enabled }}
+      affinity:
+        {{- if .Values.affinity.podAffinity.enabled }}
+        podAffinity:
+          {{- if .Values.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution }}
+          requiredDuringSchedulingIgnoredDuringExecution:
+            {{- toYaml .Values.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution | nindent 12 }}
+          {{- end }}
+          {{- if .Values.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution }}
+          preferredDuringSchedulingIgnoredDuringExecution:
+            {{- toYaml .Values.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution | nindent 12 }}
+          {{- end }}
+        {{- end }}
+        {{- if .Values.affinity.nodeAffinity.enabled }}
+        nodeAffinity:
+          {{- if .Values.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution }}
+          requiredDuringSchedulingIgnoredDuringExecution:
+            {{- toYaml .Values.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution | nindent 12 }}
+          {{- end }}
+          {{- if .Values.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution }}
+          preferredDuringSchedulingIgnoredDuringExecution:
+            {{- toYaml .Values.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution | nindent 12 }}
+          {{- end }}
+        {{- end }}
+      {{- end }}
+      {{- if .Values.volumes.enabled }}
+      volumes:
+        {{- toYaml .Values.volumes.definitions | nindent 8 }}
+      {{- end }}
+{{- end -}} 

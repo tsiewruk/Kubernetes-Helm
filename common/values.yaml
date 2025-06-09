@@ -1,0 +1,457 @@
+# =============================================================================
+# KUBERNETES COMMON LIBRARY - DEFAULT VALUES
+# =============================================================================
+# This file contains default values for the common Kubernetes library chart.
+# These values serve as examples and should be overridden in your application's
+# values.yaml file according to your specific requirements.
+# =============================================================================
+
+# =============================================================================
+# BASIC APPLICATION CONFIGURATION
+# =============================================================================
+
+# Default namespace for the application
+# Example: namespace: my-app-namespace
+namespace: default
+
+# Number of pod replicas
+# Example: replicaCount: 3
+replicaCount: 1
+
+# Additional labels to apply to all resources
+# Example usage:
+# labels:
+#   environment: production
+#   team: backend
+#   cost-center: engineering
+labels: {}
+
+# =============================================================================
+# CONTAINER IMAGE CONFIGURATION
+# =============================================================================
+
+# Container image settings
+image:
+  repository: nginx  # Example: my-registry.com/my-app
+  tag: "latest"      # Example: "1.21.0"
+  pullPolicy: IfNotPresent  # Options: Always, Never, IfNotPresent
+
+# Container port configuration
+containerPort: 80
+
+# =============================================================================
+# DEPLOYMENT STRATEGY
+# =============================================================================
+
+# Deployment update strategy
+strategy:
+  type: RollingUpdate  # Options: RollingUpdate, Recreate
+  rollingUpdate:
+    maxSurge: 25%
+    maxUnavailable: 25%
+
+# =============================================================================
+# INIT CONTAINERS
+# =============================================================================
+
+# Init containers configuration
+# Example usage:
+# initContainers:
+#   enabled: true
+#   containers:
+#     - name: init-myservice
+#       image: busybox:1.35
+#       command: ["sh", "-c", "echo 'Initializing...' && sleep 10"]
+initContainers:
+  enabled: false
+  containers: []
+
+# =============================================================================
+# SIDECAR CONTAINERS
+# =============================================================================
+
+# Sidecar containers configuration
+# Example usage:
+# sidecars:
+#   enabled: true
+#   containers:
+#     - name: nginx-sidecar
+#       image: nginx:alpine
+#       ports:
+#         - containerPort: 80
+sidecars:
+  enabled: false
+  containers: []
+
+# =============================================================================
+# HEALTH CHECKS
+# =============================================================================
+
+# Liveness probe configuration
+# Example usage:
+# livenessProbe:
+#   enabled: true
+#   path: /health
+#   port: 8080
+livenessProbe:
+  enabled: false
+  path: /
+  port: 80
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+# Readiness probe configuration
+# Example usage:
+# readinessProbe:
+#   enabled: true
+#   path: /ready
+#   port: 8080
+readinessProbe:
+  enabled: false
+  path: /
+  port: 80
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+# =============================================================================
+# RESOURCE MANAGEMENT
+# =============================================================================
+
+# Resource requests and limits
+# Example usage:
+# resources:
+#   requests:
+#     cpu: "100m"
+#     memory: "128Mi"
+#   limits:
+#     cpu: "500m"
+#     memory: "512Mi"
+resources:
+  requests:
+    cpu: "50m"
+    memory: "64Mi"
+  limits:
+    cpu: "100m"
+    memory: "128Mi"
+
+# =============================================================================
+# SERVICE CONFIGURATION
+# =============================================================================
+
+# Kubernetes Service configuration
+# Example usage:
+# service:
+#   enabled: true
+#   type: LoadBalancer
+#   port: 443
+#   targetPort: 8443
+service:
+  enabled: false
+  type: ClusterIP  # Options: ClusterIP, NodePort, LoadBalancer
+  port: 80
+  targetPort: 80
+  nodePort: null  # Only used if type is NodePort
+
+# =============================================================================
+# INGRESS CONFIGURATION
+# =============================================================================
+
+# Ingress configuration for external access
+# Example usage:
+# ingress:
+#   enabled: true
+#   className: "nginx"
+#   annotations:
+#     cert-manager.io/cluster-issuer: "letsencrypt-prod"
+#   hosts:
+#     - host: myapp.example.com
+#       paths:
+#         - path: /
+#           pathType: Prefix
+#   tls:
+#     - hosts:
+#         - myapp.example.com
+#       secretName: myapp-tls
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# =============================================================================
+# NETWORK POLICY
+# =============================================================================
+
+# Network policy for pod-to-pod communication control
+# Example usage:
+# networkPolicy:
+#   enabled: true
+#   ingress:
+#     fromNamespaces:
+#       - kube-system
+#       - monitoring
+#     fromCIDRs:
+#       - 10.0.0.0/8
+#   egress:
+#     enabled: true
+#     toCIDRs:
+#       - 0.0.0.0/0
+networkPolicy:
+  enabled: false
+  podSelector: {}
+  ingress:
+    fromNamespaces: []
+    fromCIDRs: []
+  egress:
+    enabled: false
+    toCIDRs: []
+
+# =============================================================================
+# SECURITY CONTEXT
+# =============================================================================
+
+# Security context configuration
+# Example usage:
+# securityContext:
+#   enabled: true
+#   pod:
+#     runAsUser: 1001
+#     fsGroup: 2001
+#   container:
+#     readOnlyRootFilesystem: true
+securityContext:
+  enabled: false
+  pod:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 3000
+    fsGroup: 2000
+  container:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: false
+    capabilities:
+      drop:
+        - ALL
+
+# =============================================================================
+# SERVICE ACCOUNT
+# =============================================================================
+
+# Service account configuration
+# Example usage:
+# serviceAccount:
+#   create: true
+#   name: my-custom-sa
+serviceAccount:
+  create: false
+  name: ""
+
+# =============================================================================
+# ENVIRONMENT VARIABLES
+# =============================================================================
+
+# Environment variables for the container
+# Example usage:
+# env:
+#   - name: DATABASE_URL
+#     value: "postgresql://user:pass@db:5432/mydb"
+#   - name: API_KEY
+#     valueFrom:
+#       secretKeyRef:
+#         name: api-secret
+#         key: key
+env: []
+
+# =============================================================================
+# VOLUMES AND STORAGE
+# =============================================================================
+
+# Persistent volumes configuration
+# Example usage:
+# persistentVolumes:
+#   enabled: true
+#   claim:
+#     storageClassName: "fast-ssd"
+#     accessModes:
+#       - ReadWriteOnce
+#     resources:
+#       requests:
+#         storage: 10Gi
+#   mount:
+#     mountPath: /data
+persistentVolumes:
+  enabled: false
+  claim:
+    name: ""
+    storageClassName: "standard"
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 1Gi
+  mount:
+    name: data-volume
+    mountPath: /data
+
+# Generic volumes configuration (ConfigMaps, Secrets, EmptyDir)
+# Example usage:
+# volumes:
+#   enabled: true
+#   definitions:
+#     - name: config-volume
+#       configMap:
+#         name: my-config
+#     - name: secret-volume
+#       secret:
+#         secretName: my-secret
+#   mounts:
+#     - name: config-volume
+#       mountPath: /etc/config
+#       readOnly: true
+volumes:
+  enabled: false
+  definitions: []
+  mounts: []
+
+# =============================================================================
+# POD SCHEDULING
+# =============================================================================
+
+# Pod affinity configuration
+# Example usage:
+# affinity:
+#   podAffinity:
+#     enabled: true
+#     requiredDuringSchedulingIgnoredDuringExecution:
+#       - labelSelector:
+#           matchExpressions:
+#             - key: app
+#               operator: In
+#               values: ["database"]
+#         topologyKey: kubernetes.io/hostname
+affinity:
+  podAffinity:
+    enabled: false
+    requiredDuringSchedulingIgnoredDuringExecution: []
+    preferredDuringSchedulingIgnoredDuringExecution: []
+  nodeAffinity:
+    enabled: false
+    requiredDuringSchedulingIgnoredDuringExecution: []
+    preferredDuringSchedulingIgnoredDuringExecution: []
+
+# =============================================================================
+# HORIZONTAL POD AUTOSCALER
+# =============================================================================
+
+# Horizontal Pod Autoscaler configuration
+# Example usage:
+# autoscaling:
+#   enabled: true
+#   minReplicas: 2
+#   maxReplicas: 20
+#   cpu:
+#     enabled: true
+#     averageUtilization: 70
+#   memory:
+#     enabled: true
+#     averageUtilization: 80
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  cpu:
+    enabled: true
+    averageUtilization: 80
+  memory:
+    enabled: false
+    averageUtilization: 80
+
+# =============================================================================
+# JOB CONFIGURATION
+# =============================================================================
+
+# Kubernetes Job configuration for one-time tasks
+# Example usage:
+# job:
+#   enabled: true
+#   image:
+#     repository: busybox
+#     tag: "1.35"
+#   command: ["/bin/sh"]
+#   args: ["-c", "echo 'Migration completed' && sleep 30"]
+#   backoffLimit: 3
+#   ttlSecondsAfterFinished: 300
+job:
+  enabled: false
+  image:
+    repository: busybox
+    tag: "1.35"
+    pullPolicy: IfNotPresent
+  command: ["/bin/sh"]
+  args: ["-c", "echo 'Job executed successfully'"]
+  backoffLimit: 3
+  restartPolicy: Never
+  ttlSecondsAfterFinished: 300
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "64Mi"
+    limits:
+      cpu: "100m"
+      memory: "128Mi"
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+
+# =============================================================================
+# CRONJOB CONFIGURATION
+# =============================================================================
+
+# Kubernetes CronJob configuration for scheduled tasks
+# Example usage:
+# cronjob:
+#   enabled: true
+#   schedule: "0 2 * * *"  # Daily at 2 AM
+#   image:
+#     repository: my-backup-tool
+#     tag: "v1.0"
+#   command: ["/bin/backup"]
+#   args: ["--database", "production"]
+cronjob:
+  enabled: false
+  schedule: "0 */6 * * *"  # Every 6 hours
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  concurrencyPolicy: Forbid  # Options: Allow, Forbid, Replace
+  startingDeadlineSeconds: 60
+  image:
+    repository: busybox
+    tag: "1.35"
+    pullPolicy: IfNotPresent
+  command: ["/bin/sh"]
+  args: ["-c", "echo 'CronJob executed at $(date)'"]
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "64Mi"
+    limits:
+      cpu: "100m"
+      memory: "128Mi"
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+
+# =============================================================================
+# END OF CONFIGURATION
+# =============================================================================
