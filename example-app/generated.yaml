@@ -1,0 +1,188 @@
+---
+# Source: example-app/templates/namespace.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: example-app
+  labels:
+    name: example-app
+    environment: development
+    team: platform
+---
+# Source: example-app/templates/networkpolicy.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: release-name
+  namespace: example-app
+  labels:
+    app: example-app
+    environment: development
+    team: platform
+spec:
+  podSelector:
+    matchLabels:
+      app: example-app
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+  - from:
+    - ipBlock:
+        cidr: 10.0.0.0/8
+---
+# Source: example-app/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: example-app-sa
+  namespace: example-app
+  labels:
+    app: example-app
+    environment: development
+    team: platform
+---
+# Source: example-app/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: release-name
+  namespace: example-app
+  labels:
+    app: example-app
+    environment: development
+    team: platform
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+      name: http
+  selector:
+    app: example-app
+---
+# Source: example-app/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: release-name
+  namespace: example-app
+  labels:
+    app: example-app
+    environment: development
+    team: platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: example-app
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+  template:
+    metadata:
+      labels:
+        app: example-app
+    spec:
+      serviceAccountName: example-app-sa
+      securityContext:
+        fsGroup: 2000
+        runAsGroup: 3000
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+        - name: example-app-container
+          image: "nginx:1.21"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 
+            failureThreshold: 
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 
+            failureThreshold: 
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+---
+# Source: example-app/templates/hpa.yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: release-name
+  namespace: example-app
+  labels:
+    app: example-app
+    environment: development
+    team: platform
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: release-name
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+---
+# Source: example-app/templates/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: release-name
+  namespace: example-app
+  labels:
+    app: example-app
+    environment: development
+    team: platform
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: "example-app.local"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: release-name
+                port:
+                  number: 80

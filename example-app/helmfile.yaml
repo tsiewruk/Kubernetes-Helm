@@ -1,0 +1,7 @@
+releases:
+- name: example-app
+  chart: ./
+  namespace: example-app
+  createNamespace: true
+  values:
+  - values.yaml 

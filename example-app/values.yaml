@@ -1,0 +1,128 @@
+# Example application values
+namespace: example-app
+
+# Application specific configuration
+image:
+  repository: nginx
+  tag: "1.21"
+  pullPolicy: IfNotPresent
+
+containerPort: 80
+
+# Deployment strategy
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 25%
+    maxUnavailable: 25%
+
+# Affinity
+affinity:
+  podAffinity:
+    enabled: false
+  nodeAffinity:
+    enabled: false
+
+# Volumes
+volumes:
+  enabled: false
+
+# Init containers
+initContainers:
+  enabled: false
+
+# Sidecars
+sidecars:
+  enabled: false
+
+# Service configuration
+service:
+  enabled: true
+  type: ClusterIP
+  port: 80
+  targetPort: 80
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+  hosts:
+  - host: example-app.local
+    paths:
+    - path: /
+      pathType: Prefix
+  tls: []
+
+# ServiceAccount
+serviceAccount:
+  create: true
+  name: example-app-sa
+
+# Resources
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "200m"
+    memory: "256Mi"
+
+# Autoscaling
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  cpu:
+    enabled: true
+    averageUtilization: 70
+  memory:
+    enabled: false
+
+# Security context
+securityContext:
+  enabled: true
+  pod:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 3000
+    fsGroup: 2000
+  container:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+      - ALL
+
+# Probes
+livenessProbe:
+  enabled: true
+  path: /
+  port: 80
+  initialDelaySeconds: 30
+  periodSeconds: 10
+
+readinessProbe:
+  enabled: true
+  path: /
+  port: 80
+  initialDelaySeconds: 5
+  periodSeconds: 5
+
+# Network Policy
+networkPolicy:
+  enabled: true
+  ingress:
+    fromNamespaces:
+    - kube-system
+    - ingress-nginx
+    fromCIDRs:
+    - 10.0.0.0/8
+  egress:
+    enabled: false
+
+# Labels
+labels:
+  environment: development
+  team: platform
