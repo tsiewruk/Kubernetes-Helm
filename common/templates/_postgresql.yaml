@@ -1,0 +1,47 @@
+{{- define "common.postgresql.deployment" -}}
+{{- if .Values.postgresql.enabled }}
+{{- $postgresqlValues := deepCopy .Values }}
+{{- $_ := set $postgresqlValues "deploymentName" "postgresql-deployment" }}
+{{- $_ := set $postgresqlValues "component" "database" }}
+{{- $_ := set $postgresqlValues "containerName" "postgres" }}
+{{- $_ := set $postgresqlValues "portName" "postgres" }}
+{{- $_ := set $postgresqlValues "image" .Values.postgresql.image }}
+{{- $_ := set $postgresqlValues "containerPort" .Values.postgresql.containerPort }}
+{{- $_ := set $postgresqlValues "resources" .Values.postgresql.resources }}
+{{- $_ := set $postgresqlValues "env" .Values.postgresql.env }}
+{{- $_ := set $postgresqlValues "persistentVolumes" .Values.postgresql.persistentVolumes }}
+{{- $_ := set $postgresqlValues "selectorLabels" (dict "app" "postgresql") }}
+{{- $_ := set $postgresqlValues "podLabels" (dict "app" "postgresql") }}
+{{- $_ := set $postgresqlValues "replicaCount" 1 }}
+{{- $_ := set $postgresqlValues "autoscaling" (dict "enabled" false) }}
+{{- $_ := set $postgresqlValues "livenessProbe" (dict "enabled" false) }}
+{{- $_ := set $postgresqlValues "readinessProbe" (dict "enabled" false) }}
+{{- $_ := set $postgresqlValues "securityContext" (dict "enabled" false) }}
+{{- $_ := set $postgresqlValues "serviceAccount" (dict "create" false) }}
+{{- $_ := set $postgresqlValues "initContainers" (dict "enabled" false) }}
+{{- $_ := set $postgresqlValues "sidecars" (dict "enabled" false) }}
+{{- $_ := set $postgresqlValues "affinity" (dict "podAffinity" (dict "enabled" false) "nodeAffinity" (dict "enabled" false)) }}
+{{- $_ := set $postgresqlValues "volumes" (dict "enabled" false) }}
+{{- include "common.deployment" (dict "Values" $postgresqlValues "Chart" .Chart "Release" .Release "Capabilities" .Capabilities "Template" .Template) }}
+{{- end }}
+{{- end -}}
+
+{{- define "common.postgresql.service" -}}
+{{- if and .Values.postgresql.enabled .Values.postgresql.service.enabled }}
+{{- $postgresqlValues := deepCopy .Values }}
+{{- $_ := set $postgresqlValues "component" "database" }}
+{{- $_ := set $postgresqlValues "service" .Values.postgresql.service }}
+{{- $_ := set $postgresqlValues.service "selectorLabels" (dict "app" "postgresql") }}
+{{- include "common.service" (dict "Values" $postgresqlValues "Chart" .Chart "Release" .Release "Capabilities" .Capabilities "Template" .Template) }}
+{{- end }}
+{{- end -}}
+
+{{- define "common.postgresql.pvc" -}}
+{{- if and .Values.postgresql.enabled .Values.postgresql.persistentVolumes.enabled }}
+{{- $postgresqlValues := deepCopy .Values }}
+{{- $_ := set $postgresqlValues "component" "database" }}
+{{- $_ := set $postgresqlValues "persistentVolumes" .Values.postgresql.persistentVolumes }}
+{{- $_ := set $postgresqlValues.persistentVolumes.claim "name" (.Values.postgresql.persistentVolumes.claim.name | default (printf "postgresql-%s-pvc" (include "common.fullname" .))) }}
+{{- include "common.pvc" (dict "Values" $postgresqlValues "Chart" .Chart "Release" .Release "Capabilities" .Capabilities "Template" .Template) }}
+{{- end }}
+{{- end -}} 
