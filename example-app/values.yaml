@@ -1,6 +1,14 @@
 # Example application values
 namespace: example-app
 
+# Labels
+labels:
+  environment: development
+  team: platform
+
+# Replica count
+replicaCount: 3
+
 # Application specific configuration
 image:
   repository: nginx
@@ -122,7 +130,52 @@ networkPolicy:
   egress:
     enabled: false
 
-# Labels
-labels:
-  environment: development
-  team: platform
+# Job configuration
+job:
+  enabled: true
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 300
+  restartPolicy: Never
+  image:
+    repository: busybox
+    tag: "1.35"
+    pullPolicy: IfNotPresent
+  command: ["/bin/sh"]
+  args: ["-c", "echo 'Job executed successfully'; sleep 10"]
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "64Mi"
+    limits:
+      cpu: "100m"
+      memory: "128Mi"
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 3000
+
+# CronJob configuration
+cronjob:
+  enabled: true
+  schedule: "*/5 * * * *"  # Every 5 minutes
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 60
+  image:
+    repository: busybox
+    tag: "1.35"
+    pullPolicy: IfNotPresent
+  command: ["/bin/sh"]
+  args: ["-c", "echo 'CronJob executed at $(date)'; sleep 5"]
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "64Mi"
+    limits:
+      cpu: "100m"
+      memory: "128Mi"
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 3000

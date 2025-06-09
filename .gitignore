@@ -21,4 +21,4 @@
 .vscode/
 
 Chart.lock
-charts/*
+charts/
