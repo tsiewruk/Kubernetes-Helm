@@ -1,74 +1,220 @@
-# Example application values
+# =============================================================================
+# EXAMPLE APPLICATION VALUES - COMPLETE CONFIGURATION
+# =============================================================================
+# This file contains comprehensive configuration for the example application
+# using all available options from the common Kubernetes library chart.
+# =============================================================================
+
+# =============================================================================
+# BASIC APPLICATION CONFIGURATION
+# =============================================================================
+
+# Default namespace for the application
 namespace: example-app
 
-# Labels
+# Number of pod replicas
+replicaCount: 3
+
+# Additional labels to apply to all resources
 labels:
   environment: development
   team: platform
 
-# Replica count
-replicaCount: 3
+# Name overrides
+nameOverride: ""
+fullnameOverride: ""
 
-# Application specific configuration
+# =============================================================================
+# CONTAINER IMAGE CONFIGURATION
+# =============================================================================
+
+# Container image settings
 image:
   repository: nginx
   tag: "1.21"
   pullPolicy: IfNotPresent
 
+# Container port configuration
 containerPort: 80
 
-# Deployment strategy
+# =============================================================================
+# DEPLOYMENT STRATEGY
+# =============================================================================
+
+# Deployment update strategy
 strategy:
   type: RollingUpdate
   rollingUpdate:
     maxSurge: 25%
     maxUnavailable: 25%
 
-# Affinity
-affinity:
-  podAffinity:
-    enabled: false
-  nodeAffinity:
-    enabled: false
+# =============================================================================
+# POD CONFIGURATION
+# =============================================================================
 
-# Volumes
-volumes:
-  enabled: false
+# Pod annotations
+podAnnotations: {}
 
-# Init containers
+# Pod labels
+podLabels: {}
+
+# =============================================================================
+# INIT CONTAINERS
+# =============================================================================
+
+# Init containers configuration
 initContainers:
-  enabled: false
+  enabled: true
+  containers:
+    - name: init-permissions
+      image: busybox:1.35
+      command: ["sh", "-c"]
+      args: 
+        - |
+          echo "Setting up permissions and directories..."
+          mkdir -p /shared/logs /shared/cache
+          chmod 755 /shared/logs /shared/cache
+          echo "Init container completed successfully"
+      volumeMounts:
+        - name: shared-data
+          mountPath: /shared
+    - name: wait-for-db
+      image: busybox:1.35
+      command: ["sh", "-c"]
+      args:
+        - |
+          echo "Waiting for database to be ready..."
+          until nc -z postgres-service 5432; do
+            echo "Database not ready, waiting..."
+            sleep 2
+          done
+          echo "Database is ready!"
 
-# Sidecars
+# =============================================================================
+# SIDECAR CONTAINERS
+# =============================================================================
+
+# Sidecar containers configuration
 sidecars:
-  enabled: false
-
-# Service configuration
-service:
   enabled: true
-  type: ClusterIP
+  containers:
+    - name: log-shipper
+      image: fluent/fluent-bit:2.1.10
+      ports:
+        - containerPort: 2020
+          name: http
+      env:
+        - name: FLUENT_CONF
+          value: fluent-bit.conf
+        - name: FLUENT_OPT
+          value: ""
+      volumeMounts:
+        - name: shared-data
+          mountPath: /shared
+        - name: fluent-bit-config
+          mountPath: /fluent-bit/etc
+      resources:
+        requests:
+          cpu: "50m"
+          memory: "64Mi"
+        limits:
+          cpu: "100m"
+          memory: "128Mi"
+    - name: metrics-exporter
+      image: prom/node-exporter:v1.6.1
+      ports:
+        - containerPort: 9100
+          name: metrics
+      args:
+        - --path.rootfs=/host
+        - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
+      volumeMounts:
+        - name: proc
+          mountPath: /host/proc
+          readOnly: true
+        - name: sys
+          mountPath: /host/sys
+          readOnly: true
+      resources:
+        requests:
+          cpu: "25m"
+          memory: "32Mi"
+        limits:
+          cpu: "50m"
+          memory: "64Mi"
+
+# =============================================================================
+# ENVIRONMENT VARIABLES
+# =============================================================================
+
+# Environment variables for the container
+env:
+  - name: APP_ENV
+    value: "development"
+  - name: LOG_LEVEL
+    value: "info"
+  - name: PORT
+    value: "80"
+  - name: DATABASE_URL
+    value: "postgresql://app_user:app_password@postgres-service:5432/example_app"
+  - name: REDIS_URL
+    value: "redis://redis-service:6379/0"
+  - name: APP_VERSION
+    value: "1.21.0"
+  - name: WORKER_PROCESSES
+    value: "4"
+  - name: MAX_CONNECTIONS
+    value: "100"
+  - name: CACHE_TTL
+    value: "3600"
+  - name: API_TIMEOUT
+    value: "30"
+  - name: NODE_NAME
+    valueFrom:
+      fieldRef:
+        fieldPath: spec.nodeName
+  - name: POD_NAME
+    valueFrom:
+      fieldRef:
+        fieldPath: metadata.name
+  - name: POD_NAMESPACE
+    valueFrom:
+      fieldRef:
+        fieldPath: metadata.namespace
+  - name: POD_IP
+    valueFrom:
+      fieldRef:
+        fieldPath: status.podIP
+
+# =============================================================================
+# HEALTH CHECKS
+# =============================================================================
+
+# Liveness probe configuration
+livenessProbe:
+  enabled: true
+  path: /
   port: 80
-  targetPort: 80
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
 
-# Ingress configuration
-ingress:
+# Readiness probe configuration
+readinessProbe:
   enabled: true
-  className: "nginx"
-  annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
-  hosts:
-  - host: example-app.local
-    paths:
-    - path: /
-      pathType: Prefix
-  tls: []
+  path: /
+  port: 80
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
 
-# ServiceAccount
-serviceAccount:
-  create: true
-  name: example-app-sa
+# =============================================================================
+# RESOURCE MANAGEMENT
+# =============================================================================
 
-# Resources
+# Resource requests and limits
 resources:
   requests:
     cpu: "100m"
@@ -77,18 +223,58 @@ resources:
     cpu: "200m"
     memory: "256Mi"
 
-# Autoscaling
-autoscaling:
-  enabled: true
-  minReplicas: 2
-  maxReplicas: 5
-  cpu:
-    enabled: true
-    averageUtilization: 70
-  memory:
-    enabled: false
+# =============================================================================
+# SERVICE CONFIGURATION
+# =============================================================================
 
-# Security context
+# Kubernetes Service configuration
+service:
+  enabled: true
+  type: ClusterIP
+  port: 80
+  targetPort: 80
+  nodePort: null  # Only used if type is NodePort
+
+# =============================================================================
+# INGRESS CONFIGURATION
+# =============================================================================
+
+# Ingress configuration for external access
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+  hosts:
+    - host: example-app.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# =============================================================================
+# NETWORK POLICY
+# =============================================================================
+
+# Network policy for pod-to-pod communication control
+networkPolicy:
+  enabled: true
+  podSelector: {}
+  ingress:
+    fromNamespaces:
+      - kube-system
+      - ingress-nginx
+    fromCIDRs:
+      - 10.0.0.0/8
+  egress:
+    enabled: false
+    toCIDRs: []
+
+# =============================================================================
+# SECURITY CONTEXT
+# =============================================================================
+
+# Security context configuration
 securityContext:
   enabled: true
   pod:
@@ -101,47 +287,114 @@ securityContext:
     readOnlyRootFilesystem: true
     capabilities:
       drop:
-      - ALL
+        - ALL
 
-# Probes
-livenessProbe:
-  enabled: true
-  path: /
-  port: 80
-  initialDelaySeconds: 30
-  periodSeconds: 10
+# =============================================================================
+# SERVICE ACCOUNT
+# =============================================================================
 
-readinessProbe:
-  enabled: true
-  path: /
-  port: 80
-  initialDelaySeconds: 5
-  periodSeconds: 5
+# Service account configuration
+serviceAccount:
+  create: true
+  name: example-app-sa
 
-# Network Policy
-networkPolicy:
+# =============================================================================
+# VOLUMES AND STORAGE
+# =============================================================================
+
+# Persistent volumes configuration
+persistentVolumes:
+  enabled: false
+  claim:
+    name: ""
+    storageClassName: "standard"
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 1Gi
+  mount:
+    name: data-volume
+    mountPath: /data
+
+# Generic volumes configuration (ConfigMaps, Secrets, EmptyDir)
+volumes:
   enabled: true
-  ingress:
-    fromNamespaces:
-    - kube-system
-    - ingress-nginx
-    fromCIDRs:
-    - 10.0.0.0/8
-  egress:
+  definitions:
+    - name: shared-data
+      emptyDir: {}
+    - name: fluent-bit-config
+      configMap:
+        name: fluent-bit-config
+        defaultMode: 0644
+    - name: proc
+      hostPath:
+        path: /proc
+        type: Directory
+    - name: sys
+      hostPath:
+        path: /sys
+        type: Directory
+    - name: nginx-config
+      configMap:
+        name: nginx-config
+        items:
+          - key: nginx.conf
+            path: nginx.conf
+  mounts:
+    - name: shared-data
+      mountPath: /shared
+    - name: nginx-config
+      mountPath: /etc/nginx/conf.d
+      readOnly: true
+
+# =============================================================================
+# POD SCHEDULING
+# =============================================================================
+
+# Pod affinity configuration
+affinity:
+  podAffinity:
     enabled: false
+    requiredDuringSchedulingIgnoredDuringExecution: []
+    preferredDuringSchedulingIgnoredDuringExecution: []
+  nodeAffinity:
+    enabled: false
+    requiredDuringSchedulingIgnoredDuringExecution: []
+    preferredDuringSchedulingIgnoredDuringExecution: []
 
-# Job configuration
+# =============================================================================
+# HORIZONTAL POD AUTOSCALER
+# =============================================================================
+
+# Horizontal Pod Autoscaler configuration
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  cpu:
+    enabled: true
+    averageUtilization: 70
+  memory:
+    enabled: false
+    averageUtilization: 80
+
+# =============================================================================
+# JOB CONFIGURATION
+# =============================================================================
+
+# Kubernetes Job configuration for one-time tasks
 job:
   enabled: true
-  backoffLimit: 3
-  ttlSecondsAfterFinished: 300
-  restartPolicy: Never
   image:
     repository: busybox
     tag: "1.35"
     pullPolicy: IfNotPresent
   command: ["/bin/sh"]
   args: ["-c", "echo 'Job executed successfully'; sleep 10"]
+  backoffLimit: 3
+  restartPolicy: Never
+  ttlSecondsAfterFinished: 300
   resources:
     requests:
       cpu: "50m"
@@ -154,13 +407,17 @@ job:
     runAsUser: 1000
     runAsGroup: 3000
 
-# CronJob configuration
+# =============================================================================
+# CRONJOB CONFIGURATION
+# =============================================================================
+
+# Kubernetes CronJob configuration for scheduled tasks
 cronjob:
   enabled: true
   schedule: "*/5 * * * *"  # Every 5 minutes
   successfulJobsHistoryLimit: 3
   failedJobsHistoryLimit: 1
-  concurrencyPolicy: Forbid
+  concurrencyPolicy: Forbid  # Options: Allow, Forbid, Replace
   startingDeadlineSeconds: 60
   image:
     repository: busybox
@@ -179,3 +436,7 @@ cronjob:
     runAsNonRoot: true
     runAsUser: 1000
     runAsGroup: 3000
+
+# =============================================================================
+# END OF CONFIGURATION
+# =============================================================================

@@ -6,6 +6,11 @@ metadata:
   name: example-app
   labels:
     name: example-app
+    helm.sh/chart: example-app-0.1.0
+    app.kubernetes.io/name: example-app
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/managed-by: Helm
     environment: development
     team: platform
 ---
@@ -13,16 +18,21 @@ metadata:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: release-name
+  name: release-name-example-app
   namespace: example-app
   labels:
-    app: example-app
+    helm.sh/chart: example-app-0.1.0
+    app.kubernetes.io/name: example-app
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/managed-by: Helm
     environment: development
     team: platform
 spec:
   podSelector:
     matchLabels:
-      app: example-app
+      app.kubernetes.io/name: example-app
+      app.kubernetes.io/instance: release-name
   policyTypes:
   - Ingress
   ingress:
@@ -45,7 +55,11 @@ metadata:
   name: example-app-sa
   namespace: example-app
   labels:
-    app: example-app
+    helm.sh/chart: example-app-0.1.0
+    app.kubernetes.io/name: example-app
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/managed-by: Helm
     environment: development
     team: platform
 ---
@@ -53,10 +67,14 @@ metadata:
 apiVersion: v1
 kind: Service
 metadata:
-  name: release-name
+  name: release-name-example-app
   namespace: example-app
   labels:
-    app: example-app
+    helm.sh/chart: example-app-0.1.0
+    app.kubernetes.io/name: example-app
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/managed-by: Helm
     environment: development
     team: platform
 spec:
@@ -67,23 +85,28 @@ spec:
       protocol: TCP
       name: http
   selector:
-    app: example-app
+    app.kubernetes.io/name: example-app
+    app.kubernetes.io/instance: release-name
 ---
 # Source: example-app/templates/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: release-name
+  name: release-name-example-app
   namespace: example-app
   labels:
-    app: example-app
+    helm.sh/chart: example-app-0.1.0
+    app.kubernetes.io/name: example-app
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/managed-by: Helm
     environment: development
     team: platform
 spec:
-  replicas: 1
   selector:
     matchLabels:
-      app: example-app
+      app.kubernetes.io/name: example-app
+      app.kubernetes.io/instance: release-name
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -92,7 +115,13 @@ spec:
   template:
     metadata:
       labels:
-        app: example-app
+        helm.sh/chart: example-app-0.1.0
+        app.kubernetes.io/name: example-app
+        app.kubernetes.io/instance: release-name
+        app.kubernetes.io/version: "1.0"
+        app.kubernetes.io/managed-by: Helm
+        environment: development
+        team: platform
     spec:
       serviceAccountName: example-app-sa
       securityContext:
@@ -100,12 +129,42 @@ spec:
         runAsGroup: 3000
         runAsNonRoot: true
         runAsUser: 1000
+      initContainers:
+        - args:
+          - |
+            echo "Setting up permissions and directories..."
+            mkdir -p /shared/logs /shared/cache
+            chmod 755 /shared/logs /shared/cache
+            echo "Init container completed successfully"
+          command:
+          - sh
+          - -c
+          image: busybox:1.35
+          name: init-permissions
+          volumeMounts:
+          - mountPath: /shared
+            name: shared-data
+        - args:
+          - |
+            echo "Waiting for database to be ready..."
+            until nc -z postgres-service 5432; do
+              echo "Database not ready, waiting..."
+              sleep 2
+            done
+            echo "Database is ready!"
+          command:
+          - sh
+          - -c
+          image: busybox:1.35
+          name: wait-for-db
       containers:
-        - name: example-app-container
+        - name: example-app
           image: "nginx:1.21"
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 80
+            - name: http
+              containerPort: 80
+              protocol: TCP
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -118,16 +177,16 @@ spec:
               port: 80
             initialDelaySeconds: 30
             periodSeconds: 10
-            timeoutSeconds: 
-            failureThreshold: 
+            timeoutSeconds: 5
+            failureThreshold: 3
           readinessProbe:
             httpGet:
               path: /
               port: 80
             initialDelaySeconds: 5
             periodSeconds: 5
-            timeoutSeconds: 
-            failureThreshold: 
+            timeoutSeconds: 3
+            failureThreshold: 3
           resources:
             limits:
               cpu: 200m
@@ -135,22 +194,109 @@ spec:
             requests:
               cpu: 100m
               memory: 128Mi
+          env:
+            - name: APP_ENV
+              value: "development"
+            - name: LOG_LEVEL
+              value: "info"
+            - name: PORT
+              value: "80"
+            - name: DATABASE_URL
+              value: "postgresql://app_user:app_password@postgres-service:5432/example_app"
+            - name: REDIS_URL
+              value: "redis://redis-service:6379/0"
+            - name: APP_VERSION
+              value: "1.21.0"
+            - name: WORKER_PROCESSES
+              value: "4"
+            - name: MAX_CONNECTIONS
+              value: "100"
+            - name: CACHE_TTL
+              value: "3600"
+            - name: API_TIMEOUT
+              value: "30"
+            - name: NODE_NAME
+              value: 
+            - name: POD_NAME
+              value: 
+            - name: POD_NAMESPACE
+              value: 
+            - name: POD_IP
+              value: 
+          volumeMounts:
+            - mountPath: /shared
+              name: shared-data
+            - mountPath: /etc/nginx/conf.d
+              name: nginx-config
+              readOnly: true
+        - name: log-shipper
+          image: fluent/fluent-bit:2.1.10
+          ports:
+            - containerPort: 2020
+              name: http
+          env:
+            - name: FLUENT_CONF
+              value: fluent-bit.conf
+            - name: FLUENT_OPT
+              value: ""
+          volumeMounts:
+            - mountPath: /shared
+              name: shared-data
+            - mountPath: /fluent-bit/etc
+              name: fluent-bit-config
+        - name: metrics-exporter
+          image: prom/node-exporter:v1.6.1
+          ports:
+            - containerPort: 9100
+              name: metrics
+          volumeMounts:
+            - mountPath: /host/proc
+              name: proc
+              readOnly: true
+            - mountPath: /host/sys
+              name: sys
+              readOnly: true
+      volumes:
+        - emptyDir: {}
+          name: shared-data
+        - configMap:
+            defaultMode: 420
+            name: fluent-bit-config
+          name: fluent-bit-config
+        - hostPath:
+            path: /proc
+            type: Directory
+          name: proc
+        - hostPath:
+            path: /sys
+            type: Directory
+          name: sys
+        - configMap:
+            items:
+            - key: nginx.conf
+              path: nginx.conf
+            name: nginx-config
+          name: nginx-config
 ---
 # Source: example-app/templates/hpa.yaml
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: release-name
+  name: release-name-example-app
   namespace: example-app
   labels:
-    app: example-app
+    helm.sh/chart: example-app-0.1.0
+    app.kubernetes.io/name: example-app
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/managed-by: Helm
     environment: development
     team: platform
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: release-name
+    name: release-name-example-app
   minReplicas: 2
   maxReplicas: 5
   metrics:
@@ -161,14 +307,99 @@ spec:
           type: Utilization
           averageUtilization: 70
 ---
+# Source: example-app/templates/job.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: release-name-example-app-job
+  namespace: example-app
+  labels:
+    helm.sh/chart: example-app-0.1.0
+    app.kubernetes.io/name: example-app
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/managed-by: Helm
+    environment: development
+    team: platform
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsGroup: 3000
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+        - name: example-app-job
+          image: "busybox:1.35"
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh"]
+          args: ["-c","echo 'Job executed successfully'; sleep 10"]
+          resources:
+            limits:
+              cpu: 100m
+              memory: 128Mi
+            requests:
+              cpu: 50m
+              memory: 64Mi
+---
+# Source: example-app/templates/cronjob.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: release-name-example-app-cronjob
+  namespace: example-app
+  labels:
+    helm.sh/chart: example-app-0.1.0
+    app.kubernetes.io/name: example-app
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/managed-by: Helm
+    environment: development
+    team: platform
+spec:
+  schedule: "*/5 * * * *"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 60
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          securityContext:
+            runAsGroup: 3000
+            runAsNonRoot: true
+            runAsUser: 1000
+          restartPolicy: OnFailure
+          containers:
+            - name: example-app-cronjob
+              image: "busybox:1.35"
+              imagePullPolicy: IfNotPresent
+              command: ["/bin/sh"]
+              args: ["-c","echo 'CronJob executed at $(date)'; sleep 5"]
+              resources:
+                limits:
+                  cpu: 100m
+                  memory: 128Mi
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+---
 # Source: example-app/templates/ingress.yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: release-name
+  name: release-name-example-app
   namespace: example-app
   labels:
-    app: example-app
+    helm.sh/chart: example-app-0.1.0
+    app.kubernetes.io/name: example-app
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/managed-by: Helm
     environment: development
     team: platform
   annotations:
@@ -183,6 +414,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: release-name
+                name: release-name-example-app
                 port:
                   number: 80
