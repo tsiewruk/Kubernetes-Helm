@@ -19,7 +19,7 @@ spec:
         spec:
           securityContext:
             {{- toYaml .Values.cronjob.securityContext | nindent 12 }}
-          restartPolicy: OnFailure
+          restartPolicy: {{ .Values.cronjob.restartPolicy | default "OnFailure" }}
           containers:
             - name: {{ include "common.name" . }}-cronjob
               image: "{{ .Values.cronjob.image.repository }}:{{ .Values.cronjob.image.tag }}"

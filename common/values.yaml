@@ -38,6 +38,7 @@ image:
 
 # Container port configuration
 containerPort: 80
+containerProtocol: TCP  # Options: TCP, UDP, SCTP
 
 # =============================================================================
 # DEPLOYMENT STRATEGY
@@ -154,6 +155,7 @@ service:
   type: ClusterIP  # Options: ClusterIP, NodePort, LoadBalancer
   port: 80
   targetPort: 80
+  protocol: TCP  # Options: TCP, UDP, SCTP
   nodePort: null  # Only used if type is NodePort
 
 # =============================================================================
@@ -369,9 +371,11 @@ autoscaling:
   maxReplicas: 10
   cpu:
     enabled: true
+    type: Utilization  # Options: Utilization, AverageValue
     averageUtilization: 80
   memory:
     enabled: false
+    type: Utilization  # Options: Utilization, AverageValue
     averageUtilization: 80
 
 # =============================================================================
@@ -439,6 +443,7 @@ cronjob:
     pullPolicy: IfNotPresent
   command: ["/bin/sh"]
   args: ["-c", "echo 'CronJob executed at $(date)'"]
+  restartPolicy: OnFailure  # Options: OnFailure, Never
   resources:
     requests:
       cpu: "50m"

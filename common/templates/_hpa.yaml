@@ -20,7 +20,7 @@ spec:
       resource:
         name: cpu
         target:
-          type: Utilization
+          type: {{ .Values.autoscaling.cpu.type | default "Utilization" }}
           averageUtilization: {{ .Values.autoscaling.cpu.averageUtilization | default 80 }}
     {{- end }}
     {{- if .Values.autoscaling.memory.enabled }}
@@ -28,7 +28,7 @@ spec:
       resource:
         name: memory
         target:
-          type: Utilization
+          type: {{ .Values.autoscaling.memory.type | default "Utilization" }}
           averageUtilization: {{ .Values.autoscaling.memory.averageUtilization | default 80 }}
     {{- end }}
 {{- end }}

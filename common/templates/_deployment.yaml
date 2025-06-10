@@ -59,7 +59,7 @@ spec:
           ports:
             - name: {{ .Values.portName | default "http" }}
               containerPort: {{ .Values.containerPort }}
-              protocol: TCP
+              protocol: {{ .Values.containerProtocol | default "TCP" }}
           {{- end }}
           {{- if .Values.securityContext.enabled }}
           securityContext:

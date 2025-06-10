@@ -15,7 +15,7 @@ spec:
   ports:
     - port: {{ .Values.service.port | default 80 }}
       targetPort: {{ .Values.service.targetPort | default 8080 }}
-      protocol: TCP
+      protocol: {{ .Values.service.protocol | default "TCP" }}
       name: {{ .Values.service.portName | default "http" }}
       {{- if and (eq .Values.service.type "NodePort") .Values.service.nodePort }}
       nodePort: {{ .Values.service.nodePort }}
