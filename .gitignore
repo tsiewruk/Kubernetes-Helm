@@ -22,3 +22,5 @@
 
 Chart.lock
 charts/
+*.key
+*.pub.pem

@@ -1,0 +1,12 @@
+repositories:
+  - name: sealed-secrets
+    url: https://bitnami-labs.github.io/sealed-secrets
+
+releases:
+  - name: sealed-secrets-controller
+    chart: sealed-secrets/sealed-secrets
+    namespace: kube-system
+    # https://artifacthub.io/packages/helm/bitnami-labs/sealed-secrets
+    version: 2.17.2
+    values:
+      - values.yaml 

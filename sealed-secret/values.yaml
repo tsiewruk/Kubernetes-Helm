@@ -1,0 +1,11 @@
+# Minimal configuration for Sealed Secrets Controller
+fullnameOverride: "sealed-secrets-controller"
+
+# Basic resource limits
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi 
