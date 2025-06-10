@@ -9,3 +9,9 @@ environments:
 helmfiles:
 - path: rocketchat/helmfile.yaml
 - path: n8n/helmfile.yaml
+- path: metallb/helmfile.yaml
+- path: sealed-secret/helmfile.yaml
+- path: cert-manager/helmfile.yaml
+- path: longhorn/helmfile.yaml
+- path: kuma/helmfile.yaml
+- path: ingress-nginx/helmfile.yaml

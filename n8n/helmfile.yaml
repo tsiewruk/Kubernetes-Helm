@@ -10,6 +10,7 @@ releases:
   chart: open-8gears/n8n
   namespace: n8n
   createNamespace: true
+  # https://artifacthub.io/packages/helm/open-8gears/n8n
   version: 0.25.2
   values:
   - redis.yaml

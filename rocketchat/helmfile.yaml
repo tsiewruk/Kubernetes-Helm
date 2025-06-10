@@ -9,6 +9,7 @@ releases:
   chart: rocketchat/rocketchat
   namespace: rocketchat
   createNamespace: true
+  # https://github.com/RocketChat/helm-charts
   version: 6.22
   values:
   - mongodb.yaml

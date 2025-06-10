@@ -6,6 +6,7 @@ releases:
   - name: metallb
     namespace: metallb-system
     chart: metallb/metallb
+    # https://artifacthub.io/packages/helm/metallb/metallb
     version: 0.13.10
     createNamespace: true
     hooks:
